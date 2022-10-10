@@ -1,5 +1,5 @@
 # What is this project?
-This is my final project on the AICore aiming to get me familiar with Data Engineering techniques and technology.
+This is my final project on the AICore aiming to get me familiar with Data Engineering techniques and technology. In this project I will be setting up a full pipeline based on Pinterest Experimentation Data Pipeline.
 
 ## Milestone 1 - 3
 I have read the brief of what my specification of the project is and I have set up my virtual environment with all the required libraries and dependencies and made it ready to start development. I have then downloaded all the required files and software to simulate users sending data.

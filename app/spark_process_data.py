@@ -22,7 +22,7 @@ cfg.setIfMissing("spark.executor.memory", "1g")
 
 print(cfg.toDebugString())
 
-skipDownload = True
+skipDownload = False # skip downloading from the bucket, used to speed up testing
 
 if not skipDownload:
     s3 = S3Client("^pinterest-data-", "eu-west-2")
@@ -37,19 +37,7 @@ df = df.filter(SparkF.col("follower_count").rlike("^[0-9]")) # filters out any i
 df = df.filter(SparkF.col("image_src").rlike("^https://.*")) # filter out any row with invalid image url
 
 categ_total_downloads = df.groupBy("category").sum("downloaded")
-categ_avrg_downloads = df.groupBy("category").avg("downloaded")
-category_count = df.groupBy("category").count()
-
-cat_aggr_downloads = categ_total_downloads.join(category_count, on="category", how="left")
-cat_aggr_downloads = cat_aggr_downloads.join(categ_avrg_downloads, on="category", how="left")
-
-categories = {}
-
-for categ_name in [row.asDict()["category"] for row in df.select("category").distinct().collect()]:
-    categories[categ_name] = df.select("category", "index", "unique_id").filter(SparkF.col("category") == categ_name)
 
 title_total_downloads = df.groupBy("title").sum("downloaded")
 title_categ = df.select("title", "category", "follower_count").distinct()
 title_total_downloads = title_total_downloads.sort("title").join(title_categ, on="title", how="left")
-title_total_downloads.show(100)
-

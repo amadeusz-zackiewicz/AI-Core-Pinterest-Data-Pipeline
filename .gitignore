@@ -1,0 +1,6 @@
+**/__pycache__
+/tmp
+/User_Emulation
+/kafka
+/API
+*.code-workspace

@@ -11,7 +11,7 @@ import multiprocessing
 import numpy as np
 import pandas as pd
 from app.s3 import S3Client
-import re
+from app.cassandra_wrapper import CassandraWrapper
 
 cfg = pyspark.SparkConf()
 cfg.setMaster(f"local[{multiprocessing.cpu_count()}]")
@@ -28,7 +28,7 @@ if not skipDownload:
     s3 = S3Client("^pinterest-data-", "eu-west-2")
     filePaths = s3.get_all_files("tmp")
 
-context = pyspark.SparkContext(conf=cfg)
+#context = pyspark.SparkContext(conf=cfg).setLogLevel("DEBUG")
 session = SparkSession.builder.getOrCreate()
 
 
@@ -37,7 +37,14 @@ df = df.filter(SparkF.col("follower_count").rlike("^[0-9]")) # filters out any i
 df = df.filter(SparkF.col("image_src").rlike("^https://.*")) # filter out any row with invalid image url
 
 categ_total_downloads = df.groupBy("category").sum("downloaded")
+categ_total_downloads = categ_total_downloads.withColumnRenamed("sum(downloaded)", "downloads")
 
-title_total_downloads = df.groupBy("title").sum("downloaded")
-title_categ = df.select("title", "category", "follower_count").distinct()
-title_total_downloads = title_total_downloads.sort("title").join(title_categ, on="title", how="left")
+title_total_downloads = df.groupBy("index").sum("downloaded")
+title_categ = df.select("index", "title", "category", "follower_count").distinct()
+title_total_downloads = title_total_downloads.sort("index").join(title_categ, on="index", how="left")
+title_total_downloads = title_total_downloads.withColumnRenamed("sum(downloaded)", "total_downloads")
+
+cass = CassandraWrapper(["localhost"], "test_keyspace")
+
+cass.insert_dataframe("category_downloads", categ_total_downloads, create_if_missing=True)
+cass.insert_dataframe("downloads_by_title", title_total_downloads, create_if_missing=True)
